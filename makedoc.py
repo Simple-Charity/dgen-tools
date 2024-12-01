@@ -3,6 +3,33 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from authenticator import authenticate
 
+def linkify(requests, slides, search_var, link_value):
+    for slide in slides:
+        for element in slide["pageElements"]:
+            if ('shape' in element) and ('text' in element['shape']):
+                for text_element in element['shape']['text']['textElements']:
+                    if 'textRun' in text_element:
+                        if search_var in text_element['textRun']['content']:
+                            
+                            run_start = text_element['startIndex']
+                            run_end = text_element['endIndex']
+
+                            requests = requests + [{
+                                "updateTextStyle": {
+                                    "objectId": element['objectId'],
+                                    "textRange": {
+                                        "type": "FIXED_RANGE",
+                                        "startIndex": run_start,
+                                        "endIndex": run_end,
+                                    },
+                                    "style": {
+                                        "link": {"url": link_value}
+                                    },
+                                    "fields": "link",
+                                }
+                            }]
+    return requests
+
 def main(creds, spreadsheet_id, range_name, header_row_index, template_presentation_id, new_presentation_title):
     try:
         # set up the three services and assign them variables
@@ -16,7 +43,7 @@ def main(creds, spreadsheet_id, range_name, header_row_index, template_presentat
         # duplicate the template presentation and create relevant variables
         body = {"name": new_presentation_title}
         drive_response = (
-            drive_service.files().copy(fileId=template_presentation_id, body=body).execute()
+            drive_service.files().copy(fileId=template_presentation_id, body=body, supportsAllDrives=True).execute()
         )
         new_presentation_id = drive_response.get("id")
         new_presentation = slides_service.presentations().get(presentationId = new_presentation_id).execute()
@@ -47,29 +74,62 @@ def main(creds, spreadsheet_id, range_name, header_row_index, template_presentat
                 slides_service.presentations().batchUpdate(presentationId = new_presentation_id, body=body).execute()
             )
 
+            active_slides = []
+            updated_presentation = slides_service.presentations().get(presentationId = new_presentation_id).execute()
+
+            for q in range(len(updated_presentation['slides'])):
+                if (q - 1) % (i - header_row_index + 1) == 0:
+                    active_slides = active_slides + [updated_presentation['slides'][q]]
+
 
             # Prepare an array which contains a list of lists of slides, grouped by the row of the spreadsheet to which they correspond. 
-            active_slides = [reply['duplicateObject']['objectId'] for reply in response['replies']]
-            copy_ids = copy_ids + [active_slides]
+            active_slide_ids = [slide['objectId'] for slide in active_slides]
+            copy_ids = copy_ids + [active_slide_ids]
+
             
             requests = []
 
             for j in range(len(data[i])):
-                field_name = data[1][j]
+                field_name = data[header_row_index][j]
                 field_value = data[i][j]
 
+                
 
-                requests = requests + [{
-                    "replaceAllText": {
-                        'replaceText': field_value,
-                        "pageObjectIds": active_slides,
-                        'containsText': {
-                            'text': field_name,
-                            'matchCase': True,
-
-                        } 
-                    }
-                }]
+                if field_name == "$Video_of_Client_Story(ies)":
+                    requests = linkify(requests, active_slides, "Video of Client", field_value)
+                elif field_name == "$Impact_Story_Source_Link":
+                    requests = linkify(requests, active_slides, "Story Source", field_value)
+                elif field_name == "$2021_Annual_Report":
+                    requests = linkify(requests, active_slides, "2021 Annual Report", field_value)
+                elif field_name == "$2022_Annual_Report":
+                    requests = linkify(requests, active_slides, "2022 Annual Report", field_value)
+                elif field_name == "$2023_Annual_Report":
+                    requests = linkify(requests, active_slides, "2023 Annual Report", field_value)
+                elif field_name == "$2021_Audited_Financials":
+                    requests = linkify(requests, active_slides, "2021 Financials", field_value)
+                elif field_name == "$2022_Audited_Financials":
+                    requests = linkify(requests, active_slides, "2022 Financials", field_value)
+                elif field_name == "$2023_Audited_Financials":
+                    requests = linkify(requests, active_slides, "2023 Financials", field_value)
+                elif field_name == "$Strategic_Plan":
+                    requests = linkify(requests, active_slides, "Strategic Plan", field_value)
+                elif field_name == "$Other_Report_1":
+                    requests = linkify(requests, active_slides, "Other Report #1", field_value)
+                elif field_name == "$Other_Report_2":
+                    requests = linkify(requests, active_slides, "Other Report #2", field_value)
+                elif field_name == "$Other_Report_3":
+                    requests = linkify(requests, active_slides, "Other Report #3", field_value)
+                else:
+                    requests = requests + [{
+                        "replaceAllText": {
+                            'replaceText': field_value,
+                            "pageObjectIds": active_slide_ids,
+                            'containsText': {
+                                'text': field_name,
+                                'matchCase': True,
+                            } 
+                        }
+                    }]
 
             body = {
                 "requests": requests
@@ -124,11 +184,11 @@ credentials = authenticate(scopes)
 
 functional_response = main(
     creds=credentials,
-    spreadsheet_id="1gZ0dxwA1ZTvEZCaeUGei0OxQlYxmaE5kYCYvAC4H7Mk",
-    range_name="A1:E6",
-    header_row_index = 1,
-    template_presentation_id="15dC5GTG99YvtVa-ah-Y8Zoi4PhFariETJNNAYuIm-00",
-    new_presentation_title="New Test Presentation"
+    spreadsheet_id="147n6kGgEQ209gJQgfnLUKAgcc6nkWRcNDGSsXatjI0o",
+    range_name="A1:HC4",
+    header_row_index = 2,
+    template_presentation_id="1qoJJ07tqvsY5psYW_kVtik-G69yMOx8h1SBpOdJAatk",
+    new_presentation_title="Deliverable Test Run"
 )
 
 print(functional_response)
