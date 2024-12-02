@@ -10,24 +10,62 @@ def linkify(requests, slides, search_var, link_value):
                 for text_element in element['shape']['text']['textElements']:
                     if 'textRun' in text_element:
                         if search_var in text_element['textRun']['content']:
+
                             
                             run_start = text_element['startIndex']
                             run_end = text_element['endIndex']
 
+                            if run_start == 97:
+                                print(text_element['textRun'])
+                                print(run_start)
+                                print(run_end)
+
+                            try:
+                                requests = requests + [{
+                                    "updateTextStyle": {
+                                        "objectId": element['objectId'],
+                                        "textRange": {
+                                            "type": "FIXED_RANGE",
+                                            "startIndex": run_start,
+                                            "endIndex": run_end,
+                                        },
+                                        "style": {
+                                            "link": {"url": link_value}
+                                        },
+                                        "fields": "link",
+                                    }
+                                }]
+                            except HttpError as err:
+                                print(err)
+    return requests
+
+def add_image(requests, slides, search_var, link_value):
+    pt52 = {"magnitude": 72, "unit": "PT"}
+    for slide in slides:
+        for element in slide["pageElements"]:
+            if ('shape' in element) and ('text' in element['shape']):
+                for text_element in element['shape']['text']['textElements']:
+                    if 'textRun' in text_element:
+                        if search_var in text_element['textRun']['content']:
+                            
                             requests = requests + [{
-                                "updateTextStyle": {
-                                    "objectId": element['objectId'],
-                                    "textRange": {
-                                        "type": "FIXED_RANGE",
-                                        "startIndex": run_start,
-                                        "endIndex": run_end,
+                               "createImage": {
+                                    # "objectId": 'LogoImage',
+                                    "url": link_value,
+                                    "elementProperties": {
+                                        "pageObjectId": slide['objectId'],
+                                        "size": {"height": pt52, "width": pt52},
+                                        "transform": {
+                                            "scaleX": 1,
+                                            "scaleY": 1,
+                                            "translateX": 504,
+                                            "translateY": 10,
+                                            "unit": "PT",
+                                        },
                                     },
-                                    "style": {
-                                        "link": {"url": link_value}
-                                    },
-                                    "fields": "link",
                                 }
                             }]
+
     return requests
 
 def main(creds, spreadsheet_id, range_name, header_row_index, template_presentation_id, new_presentation_title):
@@ -93,10 +131,26 @@ def main(creds, spreadsheet_id, range_name, header_row_index, template_presentat
                 field_name = data[header_row_index][j]
                 field_value = data[i][j]
 
+
+                if field_name == "$CEO_Name" and (not data[i][j+1] == ""):
+                    requests = linkify(requests, active_slides, "$CEO_Name", data[i][j+1])
+                elif field_name == "$COO_Name" and (not data[i][j+1] == ""):
+                    requests = linkify(requests, active_slides, "$COO_Name", data[i][j+1])
+                elif field_name == "$Director_of_Development_Name" and (not data[i][j+1] == ""):
+                    requests = linkify(requests, active_slides, "$Director_of_Development_Name", data[i][j+1])
+                elif field_name == "$Board_Chair_Name" and (not data[i][j+1] == ""):
+                    requests = linkify(requests, active_slides, "$Board_Chair_Name", data[i][j+1])
+                elif field_name == "$Board_Vice_Chair_Name" and (not data[i][j+1] == ""):
+                    requests = linkify(requests, active_slides, "$Board_Vice_Chair_Name", data[i][j+1])
+                elif field_name == "$Board_Secretary_Name" and (not data[i][j+1] == ""):
+                    requests = linkify(requests, active_slides, "$Board_Secretary_Name", data[i][j+1])
+
                 
 
                 if field_name == "$Video_of_Client_Story(ies)":
                     requests = linkify(requests, active_slides, "Video of Client", field_value)
+                elif field_name == "$Video_of_Staff":
+                    requests = linkify(requests, active_slides, "Video of Staff", field_value)
                 elif field_name == "$Impact_Story_Source_Link":
                     requests = linkify(requests, active_slides, "Story Source", field_value)
                 elif field_name == "$2021_Annual_Report":
@@ -119,7 +173,25 @@ def main(creds, spreadsheet_id, range_name, header_row_index, template_presentat
                     requests = linkify(requests, active_slides, "Other Report #2", field_value)
                 elif field_name == "$Other_Report_3":
                     requests = linkify(requests, active_slides, "Other Report #3", field_value)
-                else:
+
+
+
+                elif field_name == '$Logo':
+                    requests = add_image(requests, active_slides, field_name, field_value)
+
+                    requests = requests + [{
+                        "replaceAllText": {
+                            'replaceText': "",
+                            "pageObjectIds": active_slide_ids,
+                            'containsText': {
+                                'text': field_name,
+                                'matchCase': True,
+                            } 
+                        }
+                    }]
+                    
+
+                elif (not field_name == "$CEO_Name") and (not field_name == "$COO_Name") and (not field_name == "$Director_of_Development_Name") and (not field_name == "$Board_Chair_Name") and (not field_name == "$Board_Vice_Chair_Name") and (not field_name == "$Board_Secretary_Name"):
                     requests = requests + [{
                         "replaceAllText": {
                             'replaceText': field_value,
@@ -138,6 +210,37 @@ def main(creds, spreadsheet_id, range_name, header_row_index, template_presentat
             response = (
                 slides_service.presentations().batchUpdate(presentationId = new_presentation_id, body=body).execute()
             )
+
+
+
+            requests = []
+
+            for j in range(len(data[i])):
+
+                field_name = data[header_row_index][j]
+                field_value = data[i][j]
+
+                if field_name == "$CEO_Name" or field_name == "$COO_Name" or field_name == "$Director_of_Development_Name" or field_name == "$Board_Chair_Name" or field_name == "$Board_Vice_Chair_Name" or field_name == "$Board_Secretary_Name":
+                    requests = requests + [{
+                        "replaceAllText": {
+                            'replaceText': field_value,
+                            "pageObjectIds": active_slide_ids,
+                            'containsText': {
+                                'text': field_name,
+                                'matchCase': True,
+                            } 
+                        }
+                    }]
+
+            if not requests == []:
+
+                body = {
+                    "requests": requests
+                }
+
+                response = (
+                    slides_service.presentations().batchUpdate(presentationId = new_presentation_id, body=body).execute()
+                )
 
         # Construct requests to put the slides in the right order
         requests = []
@@ -185,7 +288,7 @@ credentials = authenticate(scopes)
 functional_response = main(
     creds=credentials,
     spreadsheet_id="147n6kGgEQ209gJQgfnLUKAgcc6nkWRcNDGSsXatjI0o",
-    range_name="A1:HC4",
+    range_name="A1:IT5",
     header_row_index = 2,
     template_presentation_id="1qoJJ07tqvsY5psYW_kVtik-G69yMOx8h1SBpOdJAatk",
     new_presentation_title="Deliverable Test Run"
