@@ -15,28 +15,20 @@ def linkify(requests, slides, search_var, link_value):
                             run_start = text_element['startIndex']
                             run_end = text_element['endIndex']
 
-                            if run_start == 97:
-                                print(text_element['textRun'])
-                                print(run_start)
-                                print(run_end)
-
-                            try:
-                                requests = requests + [{
-                                    "updateTextStyle": {
-                                        "objectId": element['objectId'],
-                                        "textRange": {
-                                            "type": "FIXED_RANGE",
-                                            "startIndex": run_start,
-                                            "endIndex": run_end,
-                                        },
-                                        "style": {
-                                            "link": {"url": link_value}
-                                        },
-                                        "fields": "link",
-                                    }
-                                }]
-                            except HttpError as err:
-                                print(err)
+                            requests = requests + [{
+                                "updateTextStyle": {
+                                    "objectId": element['objectId'],
+                                    "textRange": {
+                                        "type": "FIXED_RANGE",
+                                        "startIndex": run_start,
+                                        "endIndex": run_end,
+                                    },
+                                    "style": {
+                                        "link": {"url": link_value}
+                                    },
+                                    "fields": "link",
+                                }
+                            }]
     return requests
 
 def add_image(requests, slides, search_var, link_value):
