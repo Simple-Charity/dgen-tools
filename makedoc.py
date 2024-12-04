@@ -58,7 +58,6 @@ def add_image(requests, slides, search_var, link_value):
                                     },
                                 }
                             }]
-
     return requests
 
 
@@ -96,13 +95,8 @@ def main(creds, spreadsheet_id, range_name, header_row_index, template_presentat
                 }
             }]
 
-        body = {
-            "requests": requests
-        }
-
-        response = (
-            slides_service.presentations().batchUpdate(presentationId = new_presentation_id, body=body).execute()
-        )
+        body = {"requests": requests}
+        response = (slides_service.presentations().batchUpdate(presentationId = new_presentation_id, body=body).execute())
 
         active_slides = []
         updated_presentation = slides_service.presentations().get(presentationId = new_presentation_id).execute()
@@ -111,12 +105,11 @@ def main(creds, spreadsheet_id, range_name, header_row_index, template_presentat
             if (q - 1) % (i - header_row_index + 1) == 0:
                 active_slides = active_slides + [updated_presentation['slides'][q]]
 
-
         # Prepare an array which contains a list of lists of slides, grouped by the row of the spreadsheet to which they correspond. 
         active_slide_ids = [slide['objectId'] for slide in active_slides]
         copy_ids = copy_ids + [active_slide_ids]
 
-        
+
         requests = []
 
         for j in range(len(data[i])):
@@ -161,14 +154,8 @@ def main(creds, spreadsheet_id, range_name, header_row_index, template_presentat
                     }
                 }]
 
-        body = {
-            "requests": requests
-        }
-
-        response = (
-            slides_service.presentations().batchUpdate(presentationId = new_presentation_id, body=body).execute()
-        )
-
+        body = {"requests": requests}
+        response = (slides_service.presentations().batchUpdate(presentationId = new_presentation_id, body=body).execute())
 
 
         requests = []
@@ -192,14 +179,9 @@ def main(creds, spreadsheet_id, range_name, header_row_index, template_presentat
                 }]
 
         if not requests == []:
+            body = {"requests": requests}
+            response = (slides_service.presentations().batchUpdate(presentationId = new_presentation_id, body=body).execute())
 
-            body = {
-                "requests": requests
-            }
-
-            response = (
-                slides_service.presentations().batchUpdate(presentationId = new_presentation_id, body=body).execute()
-            )
 
     # Construct requests to put the slides in the right order
     requests = []
@@ -221,13 +203,8 @@ def main(creds, spreadsheet_id, range_name, header_row_index, template_presentat
             }
         }]
 
-    body = {
-        "requests": requests
-    }
-
-    response = (
-        slides_service.presentations().batchUpdate(presentationId = new_presentation_id, body=body).execute()
-    )
+    body = { "requests": requests}
+    response = (slides_service.presentations().batchUpdate(presentationId = new_presentation_id, body=body).execute())
 
     return "Completed without error."
     
