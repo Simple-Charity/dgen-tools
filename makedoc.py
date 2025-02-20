@@ -2,6 +2,7 @@
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from authenticator import authenticate
+import time
 
 def linkify(requests, slides, search_var, link_value):
     for slide in slides:
@@ -182,6 +183,9 @@ def main(creds, spreadsheet_id, range_name, header_row_index, template_presentat
             body = {"requests": requests}
             response = (slides_service.presentations().batchUpdate(presentationId = new_presentation_id, body=body).execute())
 
+        print(i)
+        time.sleep(2)
+
 
     # Construct requests to put the slides in the right order
     requests = []
@@ -249,13 +253,22 @@ dynamic_link_substitution_items = [
 # run the main functional
 functional_response = main(
     creds=credentials,
-    spreadsheet_id="147n6kGgEQ209gJQgfnLUKAgcc6nkWRcNDGSsXatjI0o",
-    range_name="A1:IT5",
-    header_row_index = 2,
-    template_presentation_id="1qoJJ07tqvsY5psYW_kVtik-G69yMOx8h1SBpOdJAatk",
-    new_presentation_title="Deliverable Test",
-    static_link_pairs=static_link_substitution_pairs,
-    dynamic_link_items=dynamic_link_substitution_items,
+
+
+
+    # variables
+    spreadsheet_id="1TNho48WV9DaOW_Xenc-56jDLuz7doXGFoOdfyx0UuK8",
+    range_name="A1:G8",
+    header_row_index = 1,
+    template_presentation_id="1Uu75a9JQl7KfXy7mrpLU6tUtReo02cbSK2JRtNpi26M",
+    new_presentation_title="Tax Letter Run",
+
+
+
+
+
+    static_link_pairs={},
+    dynamic_link_items={},
 )
 
 print(functional_response)
